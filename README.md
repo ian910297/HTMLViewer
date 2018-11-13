@@ -12,10 +12,12 @@ Maybe I would develope in other programming language in the future. Anyway, just
     * [來做個網路瀏覽器吧！Let's build a web browser! 系列](https://ithelp.ithome.com.tw/users/20103745/ironman/1270)
     * [Let's build a browser engine!](https://limpet.net/mbrubeck/2014/08/08/toy-layout-engine-1.html)
 
-* Code
-    * [mbrubeck/robinson (Rust)](https://github.com/mbrubeck/robinson): A toy web rendering engine
-    * [reesmichael1/WebWhir (c++)](https://github.com/reesmichael1/WebWhir/): A simple HTML rendering engine
-    * [FATESAIKOU/QueriableHtml (golang)](https://github.com/FATESAIKOU/QueriableHtml): A simple HTML parser
+* Code Reference
+    * Render Engine
+        * [mbrubeck/robinson (Rust)](https://github.com/mbrubeck/robinson): A toy web rendering engine
+        * [reesmichael1/WebWhir (c++)](https://github.com/reesmichael1/WebWhir/): A simple HTML rendering engine
+    * HTML Parser
+        * [FATESAIKOU/QueriableHtml (golang)](https://github.com/FATESAIKOU/QueriableHtml): A simple HTML parser
 
 ## Workflow
 
