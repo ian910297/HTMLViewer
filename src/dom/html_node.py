@@ -6,8 +6,8 @@ Created:    2018/11/13
 Updated:    2018/11/13
 """
 
-from .BaseNode import BaseNode
+from .base_node import BaseNode
 
 class HTMLNode(BaseNode):
-    def Selector(self):
-        print('Selector')
+    def selector(self):
+        print('selector')

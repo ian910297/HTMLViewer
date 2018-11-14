@@ -9,9 +9,11 @@ Updated:    2018/11/12
 class BaseNode:
     name = None
     data = None
-    nodes = []
+    parent = None
     attrs = []
+    children = []
     __is_leaf = False
 
-    def AppendNode(self, node):
-        self.nodes.append(node)
+    def append_child(self, child):
+        self.children.append(child)
+        self.children[-1].parent = self
