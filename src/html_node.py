@@ -6,7 +6,7 @@ Created:    2018/11/13
 Updated:    2018/11/13
 """
 
-from .base_node import BaseNode
+from base_node import BaseNode
 
 class HTMLNode(BaseNode):
     def selector(self):

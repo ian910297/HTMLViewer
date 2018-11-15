@@ -9,8 +9,8 @@ Updated:    2018/11/13
 from enum import Enum
 import re
 
-from dom.html_node import HTMLNode
-
+from base_parser import BaseParser
+from html_node import HTMLNode
 
 class HTMLParserMode(Enum):
     initial = 1
@@ -56,31 +56,10 @@ starttag_open_close = re.compile(r"""
 """, re.VERBOSE)
 commentclose = re.compile(r'--\s*>')
 
-class BaseParser:
-    def reset(self):
-        self.lineno = 1 # line number
-        self.offset = 0 # data offset
-    
-    def getpos(self):
-        return self.lineno, self.offset
-
-    def updatepos(self, i, j):
-        rawdata = self.rawdata
-        nlines = rawdata.count("\n", i, j)
-
-        if nlines:
-            self.lineno = self.lineno + nlines
-            pos = rawdata.rindex("\n", i, j)
-            self.offset = j - (pos+1)
-        else:
-            self.offset = self.offset + j - 1
-        
-        return j
-    
-
 class HTMLParser(BaseParser):
     def __init__(self):
         self.rawdata = ''
+        self.mode = 0
         self.root = HTMLNode()
         self.state = HTMLParserMode.initial
         self.cdata_elem = None # style, script
@@ -112,7 +91,11 @@ class HTMLParser(BaseParser):
             startswith = rawdata.startswith # startswith is a method of string
             if startswith('<', i):
                 if starttag_open.match(rawdata, i): # < + letter, i.e. <head ...>
-                    k = self.parse_starttag(i)
+                    k, node = self.parse_starttag(i)
+
+                    if(self.root == None):
+                        self.root = node
+                        
                 elif startswith('<!--', i):
                     k = self.parse_comment(i)
                 else:
@@ -135,15 +118,18 @@ class HTMLParser(BaseParser):
             return endpos
         self.__starttag_text = rawdata[i:endpos]
         
-        # parse the content
+        # parse the tag content
         attrs = []
         tag = starttag_get.search(rawdata, i)
         self.lasttag = tagname = tag.group()
+        
+        node = HTMLNode()
+
         k = tag.end()
 
-        return endpos
+        return endpos, node
 
-    def parse_endtag(self):
+    def parse_content(self, i):
         pass
 
     def parse_comment(self, i, report=1):
