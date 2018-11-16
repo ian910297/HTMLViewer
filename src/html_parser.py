@@ -14,9 +14,9 @@ from html_node import HTMLNode
 
 class HTMLParserMode(Enum):
     initial = 1
-    before_html = 2
-    in_head = 3
-    in_body = 4
+    strip_space = 2
+    allow_pure_text = 3 # in text tag
+    
 
 """ 
 copy part of code from https://github.com/python/cpython/blob/3.7/Lib/html/parser.py
@@ -39,29 +39,40 @@ you can pratice regular expresiion on https://regex101.com/
 '?<=':  text: "Chung-Yi, Chi"  pattern: "(?<=Chung-Yi, )Chi"  Ans: "Chi"
 """
 
-starttag_open = re.compile('<[a-zA-Z]')
+starttag_open = re.compile(r'<[a-zA-Z]')
 starttag_get = re.compile(r'(?<=<)[a-zA-Z]+')
 starttag_open_close = re.compile(r"""
     <[a-zA-Z]+                  # tag name
     (\s*                        # optional whitespace before attribute name
         ([a-zA-Z\-]+=           # attr name
-            (                   # attr value
-                 (\'.+\')
-                |(\".+\")
+            (?:                 # attr value                 
+             '[^']*'            # use [^'] to allow any character except '
+            |"[^"]*"
             )
         )
+        (?=\s*)*
     )*
     \s*                         # trailing whitespace
     >                           # close tag
 """, re.VERBOSE)
+attrname_get = re.compile(r'\s*[a-zA-Z\-]*(?==)')
+attrvalue_get = re.compile(r"""
+    (?:                         # attr value                 
+     '[^']*'                    # use [^'] to allow any character except '
+    |"[^"]*"
+    )
+""", re.VERBOSE)
+endtag_get = re.compile(r'(?<=</)[a-zA-Z]+')
+endtag_close = re.compile(r'(?<=</)[a-zA-Z]+\s*>')
 commentclose = re.compile(r'--\s*>')
 
 class HTMLParser(BaseParser):
     def __init__(self):
         self.rawdata = ''
-        self.mode = 0
-        self.root = HTMLNode()
-        self.state = HTMLParserMode.initial
+        self.root = None
+        self.walker = None
+        self.walker_state = HTMLParserMode.initial
+        self.opentag_stack = []
         self.cdata_elem = None # style, script
         self.reset()
 
@@ -81,6 +92,7 @@ class HTMLParser(BaseParser):
 
         while i < length:
             # find first label '<'
+            print("opentag_stack:", self.opentag_stack)
             j = rawdata.find('<', i)
             if j < 0: # We cannot find the next label '<'
                 break
@@ -93,9 +105,14 @@ class HTMLParser(BaseParser):
                 if starttag_open.match(rawdata, i): # < + letter, i.e. <head ...>
                     k, node = self.parse_starttag(i)
 
-                    if(self.root == None):
+                    if self.root is None: # set the root
                         self.root = node
+                        self.walker = node
+                    
+                    self.walker = node
                         
+                elif startswith('</', i):
+                    k = self.parse_endtag(i)
                 elif startswith('<!--', i):
                     k = self.parse_comment(i)
                 else:
@@ -110,37 +127,72 @@ class HTMLParser(BaseParser):
     
     def parse_starttag(self, i):
         rawdata = self.rawdata
+
         # get the end position of the start tag
         end = starttag_open_close.match(rawdata, i)
-        print(rawdata[i:end.end()])
         endpos = end.end()
         if endpos < 0:
             return endpos
-        self.__starttag_text = rawdata[i:endpos]
         
-        # parse the tag content
-        attrs = []
+        print("content:", rawdata[i:endpos])
+        print("i:", i, "endpos:", endpos)
+
+        # get tag name
         tag = starttag_get.search(rawdata, i)
-        self.lasttag = tagname = tag.group()
-        
+        tagname = tag.group()
+        i = tag.end()
+        print("i:", i, "endpos:", endpos)
+
+        # append tag
+        self.opentag_stack.append(tagname)
         node = HTMLNode()
+        node.tagname = tagname
 
-        k = tag.end()
+        # parse attr
+        while True:
+            attrname = attrname_get.search(rawdata, i)
+            if (attrname is None) or (attrname.start() > endpos):
+                break
+            print("attrname:", attrname.group())
+            
+            i = attrname.end()
 
+            attrvalue = attrvalue_get.search(rawdata, i)
+            if (attrvalue is None):
+                break
+            print("attrvalue:", attrvalue.group())
+
+            i = attrvalue.end()
+        
         return endpos, node
 
-    def parse_content(self, i):
-        pass
+    def parse_endtag(self, i):
+        rawdata = self.rawdata
+        assert rawdata[i:i+2] == "</", "unexpected call to parse_endtag"
+        
+        # get the end position of the end tag
+        end = endtag_close.search(rawdata, i)
+        endpos = end.end()
+
+        tag = endtag_get.search(rawdata, i)
+        tagname = tag.group().strip()
+        if self.opentag_stack[-1] == tagname:
+            self.opentag_stack.pop()
+        else:
+            print('tag match error')
+        
+        return endpos
+        
 
     def parse_comment(self, i, report=1):
-        raw_data = self.rawdata
-        match = commentclose.search(raw_data, i+4)
+        rawdata = self.rawdata
+        match = commentclose.search(rawdata, i+4)
 
         if not match:
             return -1
         if report:
             j = match.start()
-            self.handle_comment(raw_data[i+4: j])
+            self.handle_comment(rawdata[i+4: j])
         
         return match.end()
         
