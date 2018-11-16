@@ -96,6 +96,14 @@ class HTMLParser(BaseParser):
             j = rawdata.find('<', i)
             if j < 0: # We cannot find the next label '<'
                 break
+            
+            # store data content to node
+            if self.walker_state is not HTMLParserMode.initial:
+                node = self.parse_content(i, j)
+
+                if node is not None:
+                    self.walker.append_child(node)
+
             i = self.updatepos(i, j)
 
             if i == length: break
@@ -107,12 +115,16 @@ class HTMLParser(BaseParser):
 
                     if self.root is None: # set the root
                         self.root = node
-                        self.walker = node
+                    else:
+                        self.walker.append_child(node)
                     
                     self.walker = node
-                        
+                    self.walker_state = HTMLParserMode.allow_pure_text
                 elif startswith('</', i):
                     k = self.parse_endtag(i)
+
+                    if self.walker.parent is not None:
+                        self.walker = self.walker.parent
                 elif startswith('<!--', i):
                     k = self.parse_comment(i)
                 else:
@@ -146,7 +158,7 @@ class HTMLParser(BaseParser):
         # append tag
         self.opentag_stack.append(tagname)
         node = HTMLNode()
-        node.tagname = tagname
+        node.name = tagname
 
         # parse attr
         while True:
@@ -195,6 +207,23 @@ class HTMLParser(BaseParser):
             self.handle_comment(rawdata[i+4: j])
         
         return match.end()
+    
+    def parse_content(self, i, j):
+        rawdata = self.rawdata
+        node = None
+        text = rawdata[i:j]
+
+        # another impl but it would remove the trailing space at the begin and the end
+        # ' '.join(text.split())
+        text = re.sub('\s+', ' ', text)
+
+        if len(text) is not 0:
+            node = HTMLNode(True)
+            node.name = text
+            node.data = text
+
+        return node
+        
         
     def handle_comment(self, comment):
         pass

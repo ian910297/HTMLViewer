@@ -22,13 +22,15 @@ def main():
     raw_text = r"""
     <!-- hello, world --    >
     <head  >
-    <div class="my_class1 my_class2" data-intent="jquery-data">Hello, World</div>
+    <div class="my_class1 my_class2" data-intent="jquery-data">Hello, World 1</div>
+    <p class="my_class1 my_class2" data-intent="jquery-data"> outside <b>Hello, World 2</b></p>
     </head>
     """
 
     parser = HTMLParser()
     parser.load_text(raw_text)
     parser.run()
+    parser.root.vardump()
 
 if __name__ == '__main__':
     main()
