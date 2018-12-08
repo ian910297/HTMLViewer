@@ -16,28 +16,6 @@ class HTMLParserMode(Enum):
     initial = 1
     strip_space = 2
     allow_pure_text = 3 # in text tag
-    
-
-""" 
-copy part of code from https://github.com/python/cpython/blob/3.7/Lib/html/parser.py
-the standar is too complex to learn, so I write a simple regular rule.
-the following is some knowledge about regular expression
-you can pratice regular expresiion on https://regex101.com/
-
-'^':    matches the start of the string
-'$':    matches the end of the string
-'&':    the whole matched string
-[^abc]: a character except a, b, c
-'\s':   [ \r\t\n\f] space character 
-        I don't know the meaning of '\f'
-'\w':   [a-zA-Z0-9_]
-'\W':   [^a-zA-Z0-9_]
-'\x00': a kind of space character
-'?:':   text: "Chung-Yi, Chi"  pattern: "Chung-Yi, (?:Chi)"   Ans: "Chung-Yi, Chi"
-'?=':   text: "Chung-Yi, Chi"  pattern: "Chung-Yi, (?=Chi)"   Ans: "Chung-Yi, "
-'?!':   text: "Chung-Yi, Wu"   pattern: "Chung-Yi, (?!Chi)"   Ans: "Chung-Yi, "
-'?<=':  text: "Chung-Yi, Chi"  pattern: "(?<=Chung-Yi, )Chi"  Ans: "Chi"
-"""
 
 starttag_open = re.compile(r'<[a-zA-Z]')
 starttag_get = re.compile(r'(?<=<)[a-zA-Z]+')
@@ -76,13 +54,6 @@ class HTMLParser(BaseParser):
         self.cdata_elem = None # style, script
         self.reset()
 
-    def load_text(self, data):
-        self.rawdata = self.rawdata + data
-
-    def load_file(self, filepath):
-        with open(filepath, 'r') as src:
-            self.rawdata = self.rawdata + src.read()
-    
     def run(self):
         rawdata = self.rawdata
         i = 0
@@ -92,7 +63,6 @@ class HTMLParser(BaseParser):
 
         while i < length:
             # find first label '<'
-            print("opentag_stack:", self.opentag_stack)
             j = rawdata.find('<', i)
             if j < 0: # We cannot find the next label '<'
                 break
@@ -113,12 +83,14 @@ class HTMLParser(BaseParser):
                 if starttag_open.match(rawdata, i): # < + letter, i.e. <head ...>
                     k, node = self.parse_starttag(i)
 
-                    if self.root is None: # set the root
+                    if self.root is None: # build the dom tree
                         self.root = node
+                        self.walker = node
                     else:
                         self.walker.append_child(node)
+                        self.walker.children[-1].set_parent(self.walker)
+                        self.walker = self.walker.children[-1]
                     
-                    self.walker = node
                     self.walker_state = HTMLParserMode.allow_pure_text
                 elif startswith('</', i):
                     k = self.parse_endtag(i)
@@ -145,15 +117,11 @@ class HTMLParser(BaseParser):
         endpos = end.end()
         if endpos < 0:
             return endpos
-        
-        print("content:", rawdata[i:endpos])
-        print("i:", i, "endpos:", endpos)
 
         # get tag name
         tag = starttag_get.search(rawdata, i)
         tagname = tag.group()
         i = tag.end()
-        print("i:", i, "endpos:", endpos)
 
         # append tag
         self.opentag_stack.append(tagname)
@@ -217,7 +185,7 @@ class HTMLParser(BaseParser):
         # ' '.join(text.split())
         text = re.sub('\s+', ' ', text)
 
-        if len(text) is not 0:
+        if not text.isspace() and len(text) > 0:
             node = HTMLNode(True)
             node.name = text
             node.data = text

@@ -30,7 +30,11 @@ def main():
     parser = HTMLParser()
     parser.load_text(raw_text)
     parser.run()
-    parser.root.vardump()
+
+    root = parser.root
+    print(root.children)
+    root.vardump()
+    
 
 if __name__ == '__main__':
     main()
