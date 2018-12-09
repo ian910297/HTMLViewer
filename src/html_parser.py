@@ -133,18 +133,28 @@ class HTMLParser(BaseParser):
             attrname = attrname_get.search(rawdata, i)
             if (attrname is None) or (attrname.start() > endpos):
                 break
-            print("attrname:", attrname.group())
-            
+
             i = attrname.end()
 
             attrvalue = attrvalue_get.search(rawdata, i)
             if (attrvalue is None):
                 break
-            print("attrvalue:", attrvalue.group())
+            
+            node = self.parse_attr(attrname.group().strip(), attrvalue.group(), node)
 
             i = attrvalue.end()
         
         return endpos, node
+
+    def parse_attr(self, attrname, attrvalue, node):
+        if attrname == 'id':
+            node.id = attrvalue
+        elif attrname == 'class':
+            classes = attrvalue[1: len(attrvalue)-1]
+            classes = classes.split(' ')
+            node.classes = classes
+
+        return node
 
     def parse_endtag(self, i):
         rawdata = self.rawdata
@@ -162,7 +172,6 @@ class HTMLParser(BaseParser):
             print('tag match error')
         
         return endpos
-        
 
     def parse_comment(self, i, report=1):
         rawdata = self.rawdata

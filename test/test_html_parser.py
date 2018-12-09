@@ -17,6 +17,7 @@ http://codewenda.com/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8sys-path-appen
 sys.path.insert(0, abspath('../src'))
 
 from html_parser import HTMLParser
+from html_selector import HTMLSelector
 
 def main():
     raw_text = r"""
@@ -31,10 +32,14 @@ def main():
     parser.load_text(raw_text)
     parser.run()
 
-    root = parser.root
-    print(root.children)
-    root.vardump()
-    
+    selector = HTMLSelector(parser.root)
+    result = selector.select('.my_class1')
+    for i in range(len(result)):
+        if result[i] is None:
+            print('[{}] is None'.format(i))
+        else:
+            #print(result[i])
+            result[i].track_root()
 
 if __name__ == '__main__':
     main()

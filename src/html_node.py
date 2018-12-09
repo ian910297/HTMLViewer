@@ -11,6 +11,8 @@ class HTMLNode():
         # attributes
         self.name = None
         self.data = None
+        self.id = None
+        self.classes = []
         self.attrs = []
 
         # tree
@@ -29,4 +31,10 @@ class HTMLNode():
         for i in range(len(self.children)):
             self.children[i].vardump()
         print('data:', self.data)
-        
+    
+    def track_root(self):
+        if self.parent is not None:
+            print(self.name, self.id, self.classes, end=' --> ')
+            self.parent.track_root()
+        else:
+            print(self.name, self.id, self.classes)

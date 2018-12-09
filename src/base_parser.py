@@ -10,6 +10,13 @@ class BaseParser:
         self.lineno = 1 # line number
         self.offset = 0 # data offset
     
+    def load_text(self, data):
+        self.rawdata = self.rawdata + data
+
+    def load_file(self, filepath):
+        with open(filepath, 'r') as src:
+            self.rawdata = self.rawdata + src.read()
+    
     def getpos(self):
         return self.lineno, self.offset
 
